@@ -20,8 +20,9 @@ const CreateCampaignForm = props => {
     nextPage,
     reset,
     applyTemplate,
+    validationFailed,
     textEditorType,
-    passResetToState
+    passResetToState,
   } = props;
 
   const lists = props.lists.map(x => x.name);
@@ -31,22 +32,25 @@ const CreateCampaignForm = props => {
     'campaignName',
     'fromName',
     'fromEmail',
+    'scheduledatetime',
     'emailSubject',
     'emailBodyPlaintext',
     'emailBodyHTML',
+    'emailBodyHTMLEditor',
     'type',
     'trackingPixelEnabled',
     'trackLinksEnabled',
     'unsubscribeLinkEnabled'
   ]; // A list of all fields that need to show errors/warnings
 
-  const resetFormAndSubmit = e => {
+  const resetFormAndSubmit = (e) => {
     e.preventDefault();
     if (valid) {
       passResetToState(reset);
       nextPage();
     } else {
       touch(...nameArray);
+      validationFailed('Form is invalid, please review fields with errors');
     }
   };
 
@@ -63,39 +67,43 @@ const CreateCampaignForm = props => {
     <div>
       <h3>Apply template</h3>
       <Combobox id="templates" data={templates} suggest={true} onSelect={value => applyForm(value)} filter="contains" />
-      <br/>
+      <br />
 
       <form onSubmit={resetFormAndSubmit}>
-        <h3>Select a List</h3>
+        <h3>Select a List*</h3>
         <div>
           <Field name="listName" component={renderCombobox} data={lists} />
         </div>
 
-        <hr/>
+        <hr />
 
         <h3>Campaign details</h3>
         {/* TODO: This needs to be validated via regex. Doesn't need to be a slug but must resolve to a unique slug so there's no possibility of conflict. */}
-        <Field name="campaignName" component={renderField} label="Campaign Name" type="text" />
-        <Field name="fromName" component={renderField} label="From Name" type="text" />
-        <Field name="fromEmail" component={renderField} label="From Email" type="email" />
+        <Field name="campaignName" component={renderField} label="Campaign Name*" type="text" />
+        <Field name="fromName" component={renderField} label="From Name*" type="text" />
+        <Field name="fromEmail" component={renderField} label="From Email*" type="email" />
 
-        <hr/>
+        <hr />
 
         <h3>Analytics</h3>
         <div><label><Field disabled={textEditorType == 'Plaintext'} name="trackingPixelEnabled" component="input" type="checkbox" /> Insert tracking pixel. Available for HTML emails only.</label></div>
         <div><label><Field disabled={textEditorType == 'Plaintext'} name="trackLinksEnabled" component="input" type="checkbox" /> Track link clickthroughs, syntax: {`{linklabel/http://mylinktotrack.com}`}. Available for HTML emails only. </label></div>
         <div><label><Field name="unsubscribeLinkEnabled" component="input" type="checkbox" /> Add unsubscribe link</label></div>
-        <hr/>
-        <Field name="scheduledatetime" component={renderDatePicker} label="Campaign Schedule" type="text" />
+        <hr />
+
+        <Field name="scheduledatetime" dateFormat="YYYY-MM-DD" component={renderDatePicker} label="Campaign Schedule*" type="text" />
+        <hr />
+
         <h3>Create email</h3>
         <Field name="type" component={renderEditorTypeRadio} label="Type of email" />
-        <Field name="emailSubject" component={renderField} label="Subject" type="text" />
+        <Field name="emailSubject" component={renderField} label="Subject*" type="text" />
+        <div hidden={true}><Field name="emailBodyDesign" component={renderField} label="emailBodyDesign" type="text" /></div>
         {/* We only want to render the textEditor that we are using, and we maintain state for each */}
-        <Field name={`emailBody${textEditorType}`} emailBody={`emailBody${textEditorType}`} component={renderTextEditor} label="Write Email" textEditorType={textEditorType} />
-        <br/>
+        <Field name={`emailBody${textEditorType}`} emailBody={`emailBody${textEditorType}`} component={renderTextEditor} label="Write Email*" textEditorType={textEditorType} />
+        <br />
         <div className="box-footer">
           <div className="btn-group">
-            <button className="btn btn-success btn-lg btn-hug" type="submit" disabled={invalid}>Next Step</button>
+            <button className="btn btn-success btn-lg btn-hug" type="submit" disabled={pristine || submitting}>Next Step</button>
             <button className="btn btn-danger btn-lg btn-hug" type="button" disabled={pristine || submitting} onClick={resetForm}>Reset</button>
           </div>
         </div>
@@ -110,13 +118,13 @@ CreateCampaignForm.propTypes = {
   lists: PropTypes.array.isRequired,
   templates: PropTypes.array.isRequired,
   applyTemplate: PropTypes.func.isRequired,
+  validationFailed: PropTypes.func.isRequired,
   textEditorType: PropTypes.string.isRequired,
   passResetToState: PropTypes.func.isRequired,
 };
 
 const validate = (values, props) => {
-  const errors = {};
-
+  const errors = {}; 
   if (!values.listName) {
     errors.listName = 'Required';
   } else if (_.find(props.lists, list => list.name == values.listName).status != 'ready') {
@@ -134,15 +142,23 @@ const validate = (values, props) => {
   if (!values.emailSubject) {
     errors.emailSubject = 'Required';
   }
+  if (!values.scheduledatetime) {
+    errors.scheduledatetime = 'Required';
+  }
+
   // For the fields below, bare in mind there is only ever one rendered email editor
   // But multiple state fields
   if (!values.emailBodyPlaintext && values.type === 'Plaintext') {
     errors.emailBodyPlaintext = 'Required';
   }
   // <div><br></div> is what an empty quill editor contains
-  if (values.emailBodyHTML === '<div><br></div>' && values.type === 'HTML') {
+  if (!values.emailBodyHTML && values.type === 'HTML') {
     errors.emailBodyHTML = 'Required';
   }
+  if (!values.emailBodyHTMLEditor && values.type === 'HTMLEditor') {
+    errors.emailBodyHTMLEditor = 'Required';
+  }
+
   if (!values.type) {
     errors.type = 'Required';
   }

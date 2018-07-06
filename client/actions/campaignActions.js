@@ -9,7 +9,7 @@ import {
   COMPLETE_DELETE_CAMPAIGNS, COMPLETE_DELETE_TEMPLATES,
   REQUEST_STOP_SENDING, COMPLETE_STOP_SENDING
 } from '../constants/actionTypes';
-import { API_CAMPAIGN_ENDPOINT, API_SEND_CAMPAIGN_ENDPOINT, API_TEMPLATE_ENDPOINT, API_TEST_SEND_CAMPAIGN_ENDPOINT, API_STOP_SENDING } from '../constants/endpoints';
+import { API_CAMPAIGN_ENDPOINT, API_SEND_CAMPAIGN_ENDPOINT, API_TEMPLATE_ENDPOINT, API_TEST_SEND_CAMPAIGN_ENDPOINT, API_STOP_SENDING, API_CRON_CAMPAIGN_ENDPOINT, API_SEND_CRON_CAMPAIGN_ENDPOINT, API_CAMPAIGN_SEQUENCE_ENDPOINT } from '../constants/endpoints';
 import { notify } from './notificationActions';
 import { destroy } from 'redux-form';
 
@@ -20,10 +20,17 @@ export function requestPostCreateCampaign() {
 export function completePostCreateCampaign() {
   return { type: COMPLETE_POST_CREATECAMPAIGN };
 }
+// Create new campaign Sequence
+export function requestPostCreateCampaignSequence() {
+  return { type: REQUEST_POST_CREATECAMPAIGN };
+}
+export function completePostCreateCampaignSequence() {
+  return { type: COMPLETE_POST_CREATECAMPAIGN };
+}
 
 // Create new template
 export function requestPostCreateTemplate() {
-  return { type: REQUEST_POST_CREATETEMPLATE};
+  return { type: REQUEST_POST_CREATETEMPLATE };
 }
 export function completePostCreateTemplate() {
   return { type: COMPLETE_POST_CREATETEMPLATE };
@@ -106,9 +113,49 @@ export function getCampaigns() {
         const campaignsArray = JSON.parse(xhr.responseText).map(x => {
           x.createdAt = new Date(x.createdAt);
           x.updatedAt = new Date(x.updatedAt);
+          x.scheduledatetime = new Date(x.scheduledatetime);
           return x;
         });
 
+        dispatch(completeGetCampaign(campaignsArray));
+      } else {
+        dispatch(completeGetCampaign([]));
+      }
+    };
+    xhr.send();
+  };
+}
+export function getAllCampaigns() {
+  return dispatch => {
+    dispatch(requestGetCampaign());
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', API_CRON_CAMPAIGN_ENDPOINT);
+    xhr.setRequestHeader('Accept', 'application/json, text/javascript');
+    xhr.onload = () => {
+      if (xhr.responseText) {
+        // Convert response from JSON
+        const campaignsArray = JSON.parse(xhr.responseText).map(x => {
+          x.createdAt = new Date(x.createdAt);
+          x.scheduledatetime = new Date(x.scheduledatetime);
+          x.updatedAt = new Date(x.updatedAt);
+          return x;
+        });
+        const currentDate = new Date();
+        Object.keys(campaignsArray).forEach(function (key) {
+          const row = campaignsArray[key];
+          if (currentDate.getTime() >= row.scheduledatetime.getTime()) {
+            if (row.status != 'done') {
+              const form = { userId: row.userId, id: row.id };
+              const xhr = new XMLHttpRequest();
+              xhr.open('POST', API_SEND_CRON_CAMPAIGN_ENDPOINT);
+              xhr.onload = () => {
+                //console.log(form);                
+              };
+              xhr.setRequestHeader('Content-Type', 'application/json');
+              xhr.send(JSON.stringify(form));
+            }
+          }
+        });
         dispatch(completeGetCampaign(campaignsArray));
       } else {
         dispatch(completeGetCampaign([]));
@@ -143,7 +190,27 @@ export function postCreateCampaign(form, reset) {
     xhr.onload = () => {
       dispatch(completePostCreateCampaign());
       dispatch(getCampaigns());
-      dispatch(destroy('createCampaign'));
+      setTimeout(() => {
+        dispatch(destroy('createCampaign'));        
+      }, 5000);
+      reset();
+    };
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(form);
+  };
+}
+export function postCreateCampaignSequence(form, reset) {
+  return dispatch => {
+    dispatch(requestPostCreateCampaignSequence());
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', API_CAMPAIGN_SEQUENCE_ENDPOINT);
+    xhr.onload = () => {
+      dispatch(completePostCreateCampaignSequence());
+      dispatch(getCampaigns());
+      setTimeout(() => {
+        dispatch(destroy('createCampaignSequence'));
+      }, 5000);
       reset();
     };
     xhr.setRequestHeader('Content-Type', 'application/json');

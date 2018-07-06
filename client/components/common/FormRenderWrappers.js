@@ -4,8 +4,8 @@ import { Combobox, DropdownList } from 'react-widgets';
 import { Field } from 'redux-form';
 import TextEditor from '../../containers/common/TextEditor';
 import Datetime from 'react-datetime';
-import 'react-datetime/css/react-datetime.css'
-
+import 'react-datetime/css/react-datetime.css';
+import moment from 'moment';
 // Ref redux-form http://redux-form.com/6.0.5/docs/GettingStarted.md/
 // Ref react-widgets https://jquense.github.io/react-widgets/ (for examples see https://github.com/erikras/redux-form/blob/master/examples/react-widgets/src/ReactWidgetsForm.js)
 // Ref react-rte https://github.com/sstur/react-rte
@@ -83,32 +83,45 @@ export const renderEditorTypeRadio = ({ input, label, type, meta: { touched, err
   <div>
     <label>{label}</label>
     <div className="form-group">
-      <label><Field component="input" type="radio" name={input.name} value="Plaintext" /> Plaintext</label>
+      <label><Field component="input" id="Plaintext" type="radio" name={input.name} value="Plaintext" /> Plaintext</label>
       <br />
-      <label><Field component="input" type="radio" name={input.name} value="HTML" /> HTML</label>
+      <label><Field component="input" id="HTML" type="radio" name={input.name} value="HTML" /> HTML</label>
+      <br />
+      <label><Field component="input" id="HTMLEditor" type="radio" name={input.name} value="HTMLEditor" /> Template Editor</label>
       <br />
       {touched && ((error && <span className="text-red"><i className="fa fa-exclamation" /> {error}</span>) || (warning && <span>{warning}</span>))}
     </div>
   </div>
 );
-
-export const renderDatePicker = ({ input, label, type, meta: { touched, error, warning } }) => {
-  return (
-  <div>
-    <label>{label}</label>
-    <div>
-      <Datetime dateFormat="YYYY-MM-DD"/>
-      {touched && ((error && <span className="text-red"><i className="fa fa-exclamation" /> {error}</span>) || (warning && <span>{warning}</span>))}
-    </div>
-  </div>
-)};
 
 export const renderTextEditor = ({ input, label, type, meta: { touched, error, warning }, textEditorValue, textEditorType, emailBody }) => (
   <div>
     <label>{label}</label>
     <div>
-      <Field name={emailBody ? emailBody : 'emailBody'} value={() => input.value} onChange={() => input.onChange} component={TextEditor} textEditorValue={textEditorValue} textEditorType={textEditorType} />
+      <Field name={emailBody ? emailBody : 'emailBody'} value={() => input.value} onChange={() => input.onChange} component={TextEditor} textEditorValue={textEditorValue} textEditorType={textEditorType} inputName={emailBody ? emailBody : 'emailBody'} />
       {touched && ((error && <span className="text-red"><i className="fa fa-exclamation" /> {error}</span>) || (warning && <span>{warning}</span>))}
     </div>
   </div>
 );
+export const renderDatePicker = ({ input, label, dateFormat, meta: { touched, error, warning } }) => {
+  return (
+    <div>
+      <label>{label}</label>
+      <div>
+        <Datetime {...input} dateFormat={dateFormat} selected={input.value ? input.value : null} onChange={(date) => input.onChange(date)} />
+        {touched && ((error && <span className="text-red"><i className="fa fa-exclamation" /> {error}</span>) || (warning &&
+          <span>{warning}</span>))}
+      </div>
+    </div>)
+};
+export const renderHiddenField = ({ input, label, type, id, meta: { touched, error, warning } }) => {
+  return (
+    <div>
+      <label>{label}</label>
+      <div>
+        <input className="form-control" {...input} id={id} placeholder={label} type={type} />
+        {touched && ((error && <span className="text-red"><i className="fa fa-exclamation" /> {error}</span>) || (warning && <span>{warning}</span>))}
+      </div>
+    </div>
+  )
+};

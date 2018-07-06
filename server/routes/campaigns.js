@@ -5,11 +5,14 @@ const cookieParser = require('cookie-parser')();
 // Campaign controllers
 const getCampaigns = require('../controllers/campaign/get-campaigns');
 const createCampaign = require('../controllers/campaign/create-campaign');
+const createCampaignSequence = require('../controllers/campaign/create-campaign-sequence');
 const deleteCampaigns = require('../controllers/campaign/delete-campaigns');
 const exportSentUnsentCSV = require('../controllers/campaign/export-sent-unsent-csv');
 const stopCampaignSending = require('../controllers/campaign/stop-campaign-sending');
 const sendCampaign = require('../controllers/campaign/send-campaign');
 const sendTestEmail = require('../controllers/campaign/email/amazon-ses/send-test');
+const getAllCampaigns = require('../controllers/campaign/get-allcampaigns');
+const sendCronCampaign = require('../controllers/campaign/send-croncampaign');
 
 // Middleware
 const { apiIsAuth } = require('./middleware/auth');
@@ -27,6 +30,11 @@ module.exports = function(app, io, redis) {
   app.get('/api/campaign', apiIsAuth, cookieParser, readCampaignAccess, (req, res) => {
     getCampaigns(req, res);
   });
+  // Get a list of all users campaigns
+  app.get('/api/allcampaign', cookieParser, readCampaignAccess, (req, res) => {
+    getAllCampaigns(req, res);
+  });
+
   // Export subscribers that emails were not sent/sent to during a campaign
   app.get('/api/campaign/subscribers/csv', apiIsAuth, cookieParser, readCampaignAccess, (req, res) => {
     exportSentUnsentCSV(req, res);
@@ -35,6 +43,10 @@ module.exports = function(app, io, redis) {
   // Post new campaign
   app.post('/api/campaign', apiIsAuth, parseJson, cookieParser, writeCampaignAccess, (req, res) => {
     createCampaign(req, res, io);
+  });
+  // Post new campaign
+  app.post('/api/campaignsequence', apiIsAuth, parseJson, cookieParser, writeCampaignAccess, (req, res) => {
+    createCampaignSequence(req, res, io);
   });
   // Delete campaign(s)
   app.delete('/api/campaign', apiIsAuth, parseJson, cookieParser, writeCampaignAccess, (req, res) => {
@@ -53,5 +65,9 @@ module.exports = function(app, io, redis) {
   // Post to send a test email
   app.post('/api/test', apiIsAuth, parseJson, cookieParser, writeCampaignAccess, (req, res) => {
     sendTestEmail(req, res);
+  });
+  // Post to send a cron campaign
+  app.post('/api/cronsend', parseJson, cookieParser, writeCampaignAccess, (req, res) => {
+    sendCronCampaign(req, res, io, redis);
   });
 };

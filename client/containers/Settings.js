@@ -92,12 +92,13 @@ export class SettingsComponent extends Component {
         region: values.region,
         whiteLabelUrl: values.whiteLabelUrl,
         amazonSimpleQueueServiceUrl: values.queueUrl,
-        email: values.email
-      };
+        email: values.email,
+        salesforceAccessToken: values.salesforceAccessToken
+      };      
       changeSettings(formattedFormValues);
       reset();
     } else {
-      const nameArray = ['accessKey', 'secretAccessKey', 'region', 'whiteLabelUrl', 'queueUrl', 'email'];
+      const nameArray = ['accessKey', 'secretAccessKey', 'region', 'whiteLabelUrl', 'queueUrl', 'email', 'salesforceAccessToken'];
       touch(...nameArray);
     }
   }
@@ -112,7 +113,8 @@ export class SettingsComponent extends Component {
       // amazonSimpleQueueServiceUrl,
       region,
       whiteLabelUrl,
-      email
+      email,
+      salesforceAccessToken
     } = this.props.fieldsExist;
 
     return (
@@ -185,7 +187,17 @@ export class SettingsComponent extends Component {
                       placeholder="Example: https://email.myorganisation.com"
                       helpText={<div>Display a custom URL for unsubscription and clickthrough tracking links by providing a white label URL (without the trailing backslash). This must be configured beforehand with your DNS hosting service.</div>}
                     />
-
+                    <div className="box-header with-border">
+                      <h3 className="box-title">Salesforce credentials</h3>                      
+                    </div>
+                    <Field
+                      exists={salesforceAccessToken}
+                      name="salesforceAccessToken"
+                      component={renderSettingsField}
+                      label="Salesforce Access Token"
+                      type="text"
+                      placeholder="Example: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"                      
+                    />
                     <br/>
                     <div className="box-footer">
                       <div className="btn-group">
